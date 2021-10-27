@@ -9,12 +9,13 @@
 
 #define TAGLIB_STATIC
 #include <fileref.h>
+#include <mpegfile.h>
 #include <tag.h>
-#include "mpeg/mpegfile.h"
-#include "mpeg/xingheader.h"
-#include "riff/wav/wavfile.h"
+#include <tbytevectorstream.h>
+#include "wavfile.h"
+#include <xingheader.h>
 
-#include <tbytevector.h>
+#include <utlbuffer.h>
 
 #define SOUNDTYPE_WAVE 0
 #define SOUNDTYPE_MP3 1
@@ -45,41 +46,39 @@ public:
 class SoundFile {
 
 private:
-	TagLib::File* file;
-	TagLib::Tag* tag;
+	TagLib::File* file = NULL;
+	TagLib::Tag* tag = NULL;
+	TagLib::ByteVectorStream* stream = NULL;
 	size_t type;
 
 public:
-	SoundFile(char *path) {
-
-		file = NULL;
-		tag = NULL;
-
-		char *file_extension = strrchr(path, '.');
-
-		if (file_extension == NULL) {
-			return;
-		}
-
-		if (strcmp(file_extension, ".wav") == 0) {
+	SoundFile(char* path, int type) : type(type) {
+		if (type == SOUNDTYPE_WAVE) {
 			file = new TagLib::RIFF::WAV::File(path);
 			type = SOUNDTYPE_WAVE;
 		}
-		else if (strcmp(file_extension, ".mp3") == 0) {
+		else {
 			file = new TagLib::MPEG::File(path);
 			type = SOUNDTYPE_MP3;
 		}
-		else {
-			return;
-		}
+	}
 
-		loadTag();
+	SoundFile(const CUtlBuffer& buffer, int type) : type(type) {
+		TagLib::ByteVector vector((char*)buffer.Base(), buffer.TellPut());
+		stream = new TagLib::ByteVectorStream(vector);
+
+		if (type == SOUNDTYPE_WAVE) {
+			file = new TagLib::RIFF::WAV::File(stream);
+		}
+		else {
+			file = new TagLib::MPEG::File(stream, TagLib::ID3v2::FrameFactory::instance());
+		}
 	}
 
 	~SoundFile() {
 		close();
 	}
-	
+
 	bool isOpen() {
 
 		if (file == NULL) {
@@ -89,7 +88,7 @@ public:
 		if (!file->isValid()) {
 			return false;
 		}
-		
+
 		return true;
 	}
 
@@ -105,7 +104,7 @@ public:
 
 	size_t getSoundDuration() {
 
-		TagLib::AudioProperties *properties = file->audioProperties();
+		TagLib::AudioProperties* properties = file->audioProperties();
 
 		if (!properties) {
 			return -1;
@@ -113,20 +112,20 @@ public:
 
 		if (type == SOUNDTYPE_WAVE) {
 			SoundLib_WavFile* f = (SoundLib_WavFile*)file;
-			return f->audioProperties()->length();
+			return f->audioProperties()->lengthInSeconds();
 		}
 		else {
 			TagLib::MPEG::File* f = (TagLib::MPEG::File*)file;
-			return f->audioProperties()->length();
+			return f->audioProperties()->lengthInSeconds();
 		}
 
 		return 0;
 	}
 
 	float getSoundDurationFloat() {
-		
-		TagLib::AudioProperties *properties = file->audioProperties();
-		
+
+		TagLib::AudioProperties* properties = file->audioProperties();
+
 		if (!properties) {
 			return -1;
 		}
@@ -137,14 +136,7 @@ public:
 		}
 		else {
 			TagLib::MPEG::File* f = (TagLib::MPEG::File*)file;
-
-			long first = f->firstFrameOffset();
-
-			f->seek(first);
-			TagLib::MPEG::Header firstHeader(f->readBlock(4));
-			int xingHeaderOffset = TagLib::MPEG::XingHeader::xingHeaderOffset(firstHeader.version(), firstHeader.channelMode());
-
-			f->seek(first + xingHeaderOffset);
+			TagLib::MPEG::Header firstHeader(f, f->firstFrameOffset());
 			TagLib::MPEG::XingHeader xingHeader(f->readBlock(16));
 
 			// Read the length and the bitrate from the Xing header.
@@ -166,8 +158,8 @@ public:
 	}
 
 	size_t getSoundBitRate() {
-		
-		TagLib::AudioProperties *properties = file->audioProperties();
+
+		TagLib::AudioProperties* properties = file->audioProperties();
 
 		if (!properties) {
 			return -1;
@@ -177,8 +169,8 @@ public:
 	}
 
 	size_t getSoundSamplingRate() {
-		
-		TagLib::AudioProperties *properties = file->audioProperties();
+
+		TagLib::AudioProperties* properties = file->audioProperties();
 
 		if (!properties) {
 			return -1;
@@ -187,7 +179,7 @@ public:
 		return properties->sampleRate();
 	}
 
-	void getSoundArtist(char *buf, size_t size) {
+	void getSoundArtist(char* buf, size_t size) {
 
 		if (!tag) {
 			buf[0] = '\0';
@@ -195,13 +187,13 @@ public:
 		}
 
 		TagLib::String tl_str = tag->artist();
-		const char *str = tl_str.toCString(true);
+		const char* str = tl_str.toCString(true);
 		strncpy(buf, str, size);
 
 		return;
 	}
 
-	void getSoundTitle(char *buf, size_t size) {
+	void getSoundTitle(char* buf, size_t size) {
 
 		if (!tag) {
 			buf[0] = '\0';
@@ -209,7 +201,7 @@ public:
 		}
 
 		TagLib::String tl_str = tag->title();
-		const char *str = tl_str.toCString(true);
+		const char* str = tl_str.toCString(true);
 		strncpy(buf, str, size);
 
 		return;
@@ -224,7 +216,7 @@ public:
 		return tag->track();
 	}
 
-	void getSoundAlbum(char *buf, size_t size) {
+	void getSoundAlbum(char* buf, size_t size) {
 
 		if (!tag) {
 			buf[0] = '\0';
@@ -232,7 +224,7 @@ public:
 		}
 
 		TagLib::String tl_str = tag->album();
-		const char *str = tl_str.toCString(true);
+		const char* str = tl_str.toCString(true);
 		strncpy(buf, str, size);
 
 		return;
@@ -247,7 +239,7 @@ public:
 		return tag->year();
 	}
 
-	void getSoundComment(char *buf, size_t size) {
+	void getSoundComment(char* buf, size_t size) {
 
 		if (!tag) {
 			buf[0] = '\0';
@@ -255,13 +247,13 @@ public:
 		}
 
 		TagLib::String tl_str = tag->comment();
-		const char *str = tl_str.toCString(true);
+		const char* str = tl_str.toCString(true);
 		strncpy(buf, str, size);
 
 		return;
 	}
 
-	void getSoundGenre(char *buf, size_t size) {
+	void getSoundGenre(char* buf, size_t size) {
 
 		if (!tag) {
 			buf[0] = '\0';
@@ -269,7 +261,7 @@ public:
 		}
 
 		TagLib::String tl_str = tag->genre();
-		const char *str = tl_str.toCString(true);
+		const char* str = tl_str.toCString(true);
 		strncpy(buf, str, size);
 
 		return;
@@ -281,7 +273,6 @@ private:
 	void close() {
 
 		delete file;
-
-		return;
+		delete stream;
 	}
 };

@@ -1,0 +1,41 @@
+# vim: set ts=8 sts=2 sw=2 tw=99 et ft=python:
+import os
+
+builder.SetBuildFolder('package')
+
+smPath = 'addons/sourcemod/'
+folder_list = [
+	smPath + 'extensions',
+	smPath + 'scripting',
+	smPath + 'scripting/include'
+]
+
+# Create the distribution folder hierarchy
+folder_map = {}
+
+for folder in folder_list:
+	norm_folder = os.path.normpath(folder)
+	folder_map[folder] = builder.AddFolder(norm_folder)
+
+# Performs all straight-up file copies from the source tree
+def CopyFiles(src, dest, files):
+	if not dest:
+		dest = src
+
+	dest_entry = folder_map[dest]
+
+	for source_file in files:
+		source_path = os.path.join(builder.sourcePath, src, source_file)
+		builder.AddCopy(source_path, dest_entry)
+
+# Scripting files
+CopyFiles(os.path.join('scripting', 'include'), smPath + 'scripting/include',
+	['soundlib.inc']
+)
+CopyFiles('scripting', smPath + 'scripting',
+	['soundlib_demo.sp']
+)
+
+# Copy binaries
+for cxx_task in Extension.extensions:
+	builder.AddCopy(cxx_task.binary, folder_map[smPath + 'extensions'])

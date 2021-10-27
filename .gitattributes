@@ -1,0 +1,6 @@
+* text=auto
+*.a binary
+*.lib binary
+
+# GitHub views all .h files as C, let's assume they're C++
+*.h linguist-language=c++

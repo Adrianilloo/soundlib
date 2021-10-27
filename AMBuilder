@@ -1,0 +1,34 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+import os, sys
+
+projectName = 'soundlib'
+
+# Fix various compiler errors under sample_ext's AMBuildScript
+compiler = builder.compiler
+
+if compiler.like('msvc'):
+	if (compiler.version >= 1900):
+		compiler.linkflags += ['legacy_stdio_definitions.lib']
+elif (compiler.vendor == 'clang' and compiler.version >= 'clang-10'):
+		compiler.cxxflags += ['-Wno-expansion-to-defined', '-Wno-implicit-int-float-conversion']
+
+compiler.cxxincludes += [os.path.join(builder.sourcePath, 'taglib')]
+
+if (builder.target_platform == 'windows'):
+	compiler.postlink += [os.path.join(builder.sourcePath, 'tag.lib')]
+else:
+	compiler.postlink += [os.path.join(builder.sourcePath, 'libtag.a')]
+
+sourceFiles = [
+	'sound-duration.cpp'
+]
+
+project = Extension.HL2Project(builder, projectName + '.ext')
+project.sources += [os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp')]
+project.sources += sourceFiles
+
+for sdk_name in Extension.sdks:
+	sdk = Extension.sdks[sdk_name]
+	binary = Extension.HL2Config(project, projectName + '.ext.' + sdk.ext, sdk)
+
+Extension.extensions = builder.Add(project)
