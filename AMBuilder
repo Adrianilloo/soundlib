@@ -13,15 +13,15 @@ elif (compiler.vendor == 'clang' and compiler.version >= 'clang-10'):
 		compiler.cxxflags += ['-Wno-expansion-to-defined', '-Wno-implicit-int-float-conversion']
 
 compiler.cxxincludes += [os.path.join(builder.sourcePath, 'taglib')]
+sourceFiles = [
+	'sound-duration.cpp'
+]
 
 if (builder.target_platform == 'windows'):
 	compiler.postlink += [os.path.join(builder.sourcePath, 'tag.lib')]
 else:
 	compiler.postlink += [os.path.join(builder.sourcePath, 'libtag.a')]
-
-sourceFiles = [
-	'sound-duration.cpp'
-]
+	sourceFiles += ['libc_compat.cpp']
 
 project = Extension.HL2Project(builder, projectName + '.ext')
 project.sources += [os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp')]
