@@ -5,7 +5,7 @@
 #include <sourcemod>
 #include <soundlib>
 
-#define VERSION "0.9"
+#define VERSION "1.0"
 
 
 
@@ -65,13 +65,12 @@ public Action:Command_SoundInfo(client, args) {
 
 	decl String:path[PLATFORM_MAX_PATH];
 	
-	GetCmdArg(1, path, sizeof(path));
+	GetCmdArgString(path, sizeof(path));
 
-	new Handle:soundfile = OpenSoundFile(path);
+	SoundFile soundFile = new SoundFile(path);
 	
-	if (soundfile == INVALID_HANDLE) {
-		PrintToServer("Invalid handle !");
-		
+	if (soundFile == null) {
+		PrintToServer("Invalid handle!");
 		return Plugin_Handled;
 	}
 	
@@ -81,27 +80,26 @@ public Action:Command_SoundInfo(client, args) {
 	decl String:comment[64];
 	decl String:genre[64];
 	
-	GetSoundArtist(soundfile, artist, sizeof(artist));
-	GetSoundTitle(soundfile, title, sizeof(title));
-	GetSoundAlbum(soundfile, album, sizeof(album));
-	GetSoundComment(soundfile, comment, sizeof(comment));
-	GetSoundGenre(soundfile, genre, sizeof(genre));
+	soundFile.GetArtist(artist, sizeof(artist));
+	soundFile.GetTitle(title, sizeof(title));
+	soundFile.GetAlbum(album, sizeof(album));
+	soundFile.GetComment(comment, sizeof(comment));
+	soundFile.GetGenre(genre, sizeof(genre));
 	
 	ReplyToCommand(client, "Song Info %s", path);
-	ReplyToCommand(client, "Sound Length: %d", GetSoundLength(soundfile));
-	ReplyToCommand(client, "Sound Length (float): %f", GetSoundLengthFloat(soundfile));
-	ReplyToCommand(client, "Birate: %d", GetSoundBitRate(soundfile));
-	ReplyToCommand(client, "Sampling Rate: %d", GetSoundSamplingRate(soundfile));
+	ReplyToCommand(client, "Sound Length: %d", soundFile.Length);
+	ReplyToCommand(client, "Sound Length (float): %f", soundFile.LengthFloat);
+	ReplyToCommand(client, "Birate: %d", soundFile.BitRate);
+	ReplyToCommand(client, "Sampling Rate: %d", soundFile.SamplingRate);
 	ReplyToCommand(client, "Artist: %s", artist);
 	ReplyToCommand(client, "Title: %s", title);
-	ReplyToCommand(client, "Num %d", GetSoundNum(soundfile));
+	ReplyToCommand(client, "Num %d", soundFile.Number);
 	ReplyToCommand(client, "Album: %s", album);
-	ReplyToCommand(client, "Year: %d",GetSoundYear(soundfile));
+	ReplyToCommand(client, "Year: %d", soundFile.Year);
 	ReplyToCommand(client, "Comment: %s", comment);
 	ReplyToCommand(client, "Genre: %s", genre);
 	
-	CloseHandle(soundfile);
-	
+	delete soundFile;
 	return Plugin_Handled;
 }
 

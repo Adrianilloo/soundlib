@@ -343,6 +343,7 @@ void CListener::OnClientDisconnecting(int client) {
 
 sp_nativeinfo_t g_SoundLibraryNatives[] =
 {
+	// Plain functions
 	{"OpenSoundFile",			OpenSoundFile},
 	{"GetSoundLength",			GetSoundLength},
 	{"GetSoundLengthFloat",		GetSoundLengthFloat},
@@ -355,5 +356,20 @@ sp_nativeinfo_t g_SoundLibraryNatives[] =
 	{"GetSoundYear",			GetSoundYear},
 	{"GetSoundComment",			GetSoundComment},
 	{"GetSoundGenre",			GetSoundGenre},
-	{NULL,						NULL},
+
+	// Native methods
+	{"SoundFile.SoundFile", 		OpenSoundFile},
+	{"SoundFile.Length.get",		GetSoundLength},
+	{"SoundFile.LengthFloat.get",	GetSoundLengthFloat},
+	{"SoundFile.BitRate.get",		GetSoundBitRate},
+	{"SoundFile.SamplingRate.get",	GetSoundSamplingRate},
+	{"SoundFile.GetArtist",			GetSoundArtist},
+	{"SoundFile.GetTitle",			GetSoundTitle},
+	{"SoundFile.Number.get",		GetSoundNum},
+	{"SoundFile.GetAlbum",			GetSoundAlbum},
+	{"SoundFile.Year.get",			GetSoundYear},
+	{"SoundFile.GetComment",		GetSoundComment},
+	{"SoundFile.GetGenre",			GetSoundGenre},
+
+	{NULL, NULL}
 };
