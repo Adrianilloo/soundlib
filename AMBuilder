@@ -1,34 +1,43 @@
 # vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
-import os, sys
+import os
 
 projectName = 'soundlib'
 
-# Fix various compiler errors under sample_ext's AMBuildScript
-compiler = builder.compiler
-
-if compiler.like('msvc'):
-	if (compiler.version >= 1900):
-		compiler.linkflags += ['legacy_stdio_definitions.lib']
-elif (compiler.vendor == 'clang' and compiler.version >= 'clang-10'):
-		compiler.cxxflags += ['-Wno-expansion-to-defined', '-Wno-implicit-int-float-conversion']
-
-compiler.cxxincludes += [os.path.join(builder.sourcePath, 'taglib')]
 sourceFiles = [
+	os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp'),
 	'sound-duration.cpp'
 ]
 
-if (builder.target_platform == 'windows'):
-	compiler.postlink += [os.path.join(builder.sourcePath, 'tag.lib')]
+libPath = os.path.join(builder.sourcePath, 'lib')
+
+# Prepare multi-arch build (e.g. x86 and/or x64)
+targetArchs = []
+
+if builder.options.targets:
+	targetArchs = builder.options.targets.split(',')
 else:
-	compiler.postlink += [os.path.join(builder.sourcePath, 'libtag.a')]
-	sourceFiles += ['libc_compat.cpp']
+	targetArchs = [builder.host.arch]
 
-project = Extension.HL2Project(builder, projectName + '.ext')
-project.sources += [os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp')]
-project.sources += sourceFiles
+for arch in targetArchs:
+	compiler = builder.compiler = Extension.configure(arch)
+	compiler.cxxincludes += [os.path.join(builder.sourcePath, 'taglib')]
+	project = builder.project = Extension.HL2Project(builder, projectName + '.ext')
+	project.sources += sourceFiles
 
-for sdk_name in Extension.sdks:
-	sdk = Extension.sdks[sdk_name]
-	binary = Extension.HL2Config(project, projectName + '.ext.' + sdk.ext, sdk)
+	if builder.host.platform == 'windows':
+		if arch == 'x86':
+			compiler.postlink += [os.path.join(libPath, arch, 'tag.lib')]
+		else:
+			compiler.postlink += [os.path.join(libPath, 'x64', 'tag.lib')]
+	elif arch == 'x86':
+		compiler.postlink += [os.path.join(libPath, 'linux', 'libtag_i486.a')]
+	else:
+		compiler.postlink += [os.path.join(libPath, 'linux64', 'libtag.a')]
 
-Extension.extensions = builder.Add(project)
+	for sdk in Extension.sdks:
+		sdk = Extension.sdks[sdk]
+
+		if sdk.specPasses(compiler.target):
+			binary = Extension.HL2Config(builder, projectName + '.ext.' + sdk.ext, sdk)
+
+	Extension.extensions += builder.Add(project)

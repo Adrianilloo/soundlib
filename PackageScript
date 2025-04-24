@@ -4,11 +4,18 @@ import os
 builder.SetBuildFolder('package')
 
 smPath = 'addons/sourcemod/'
+
 folder_list = [
-	smPath + 'extensions',
 	smPath + 'scripting',
 	smPath + 'scripting/include'
 ]
+
+arch_subdirs = {
+	'x86_64': 'x64'
+}
+
+for cxx_task in Extension.extensions:
+	folder_list += [smPath + 'extensions/' + arch_subdirs.get(cxx_task.target.arch, '')]
 
 # Create the distribution folder hierarchy
 folder_map = {}
@@ -38,4 +45,4 @@ CopyFiles('scripting', smPath + 'scripting',
 
 # Copy binaries
 for cxx_task in Extension.extensions:
-	builder.AddCopy(cxx_task.binary, folder_map[smPath + 'extensions'])
+	builder.AddCopy(cxx_task.binary, folder_map[smPath + 'extensions/' + arch_subdirs.get(cxx_task.target.arch, '')])

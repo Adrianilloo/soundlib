@@ -2,6 +2,7 @@
 #ifndef WIN32
 #include <string.h>
 #endif
+
 #include <stdio.h>
 #include <math.h>
 
@@ -31,7 +32,7 @@ public:
 	float getSoundLength() {
 		unsigned int streamLength = 0;
 
-		for (TagLib::uint i = 0; i < chunkCount(); i++) {
+		for (uint i = 0; i < chunkCount(); i++) {
 			if (chunkName(i) == "data") {
 				streamLength = chunkDataSize(i);
 			}
@@ -71,7 +72,7 @@ public:
 			file = new TagLib::RIFF::WAV::File(stream);
 		}
 		else {
-			file = new TagLib::MPEG::File(stream, TagLib::ID3v2::FrameFactory::instance());
+			file = new TagLib::MPEG::File(stream, true, TagLib::MPEG::Properties::Average, TagLib::ID3v2::FrameFactory::instance());
 		}
 	}
 
@@ -188,7 +189,7 @@ public:
 
 		TagLib::String tl_str = tag->artist();
 		const char* str = tl_str.toCString(true);
-		strncpy(buf, str, size);
+		Q_strncpy(buf, str, size);
 
 		return;
 	}
@@ -202,7 +203,7 @@ public:
 
 		TagLib::String tl_str = tag->title();
 		const char* str = tl_str.toCString(true);
-		strncpy(buf, str, size);
+		Q_strncpy(buf, str, size);
 
 		return;
 	}
@@ -225,7 +226,7 @@ public:
 
 		TagLib::String tl_str = tag->album();
 		const char* str = tl_str.toCString(true);
-		strncpy(buf, str, size);
+		Q_strncpy(buf, str, size);
 
 		return;
 	}
@@ -248,7 +249,7 @@ public:
 
 		TagLib::String tl_str = tag->comment();
 		const char* str = tl_str.toCString(true);
-		strncpy(buf, str, size);
+		Q_strncpy(buf, str, size);
 
 		return;
 	}
@@ -262,7 +263,7 @@ public:
 
 		TagLib::String tl_str = tag->genre();
 		const char* str = tl_str.toCString(true);
-		strncpy(buf, str, size);
+		Q_strncpy(buf, str, size);
 
 		return;
 	}

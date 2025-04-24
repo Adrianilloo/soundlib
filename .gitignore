@@ -5,6 +5,4 @@
 */Debug
 */Release
 *.opensdf
-AMBuildScript
 build
-configure.py
